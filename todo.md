@@ -11,7 +11,7 @@
         - [ ] `rag-v2/src/ui.py` (UI 컴포넌트)
 - [ ] **환경 설정 파일**
     - [ ] `.gitignore` 생성 (`venv/`, `__pycache__/`, `.env`, `chroma_db/`, `data/` 등)
-    - [ ] `requirements.txt` 작성 및 설치
+    - [ ] `requirements.txt` 작성 및 설치 (langchain, streamlit, chromadb, sentence-transformers, pypdf, rank_bm25, openpyxl, unstructured, pytesseract)
     - [ ] `config.py` 또는 `.env` 생성 (모델명, 청크 사이즈 등 상수 관리)
 
 ## 1. 환경 설정 (Environment Setup)
@@ -20,80 +20,78 @@
     - [ ] pip 업그레이드
 - [ ] **Ollama 및 모델 준비**
     - [ ] Ollama 서비스 실행 확인
-    - [ ] LLM 모델 Pull (`llama3` 또는 `mistral`)
-    - [ ] 임베딩 모델 캐싱 확인 (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`)
+    - [ ] LLM 모델 Pull (`llama3.1:8b` 또는 `qwen2:7b`)
+    - [ ] 임베딩 모델 캐싱 확인 (`BAAI/bge-m3`)
 
 ## 2. RAG 엔진 코어 구현 (src/rag_engine.py)
 ### 2.1 문서 처리 파이프라인
 - [ ] **Document Loader**
     - [ ] `PyPDFLoader`로 PDF 로드 기능 구현
+    - [ ] [Fallback] PDF 파싱 실패 시 OCR (Tesseract) 처리 로직 추가
     - [ ] `UnstructuredExcelLoader` (또는 pandas)로 Excel 로드 기능 구현
-    - [ ] [예외처리] 암호화된 파일이나 깨진 파일 처리
+- [ ] **Text Preprocessing (Robust Cleaning)**
+    - [ ] 공백 정규화 (다중 공백/줄바꿈 -> 단일 공백)
+    - [ ] 헤더/푸터 자동 제거 (Vector 유사도 기반 반복 패턴 감지)
+    - [ ] 한글 자모 복구 (`unicodedata.normalize('NFC')`)
+    - [ ] 표 데이터 평탄화 (Flatten to Markdown/Text)
 - [ ] **Text Splitter**
-    - [ ] `RecursiveCharacterTextSplitter` 초기화
-    - [ ] Config에서 Chunk Size(1000), Overlap(200) 불러오기
-    - [ ] 분할된 청크의 메타데이터(페이지 번호, 시트명, 파일명) 보존 확인
+    - [ ] **Adaptive Chunking** 전략 구현
+        - [ ] 일반 문서: 500~700 tokens
+        - [ ] 기술/API 문서: 800~1000 tokens
+        - [ ] Overlap: 150 tokens
+    - [ ] **Chunk Deduplication**: 중복 청크 제거 로직
 
 ### 2.2 벡터 저장소 및 검색기
 - [ ] **Embedding**
-    - [ ] HuggingFaceEmbeddings 초기화 (device: cpu/cuda 자동 감지)
+    - [ ] `BAAI/bge-m3` 모델 로드 및 캐싱 (`@st.cache_resource` 활용)
 - [ ] **Vector Store (ChromaDB)**
-    - [ ] PersistentClient 설정 (데이터 영구 저장)
-    - [ ] 컬렉션 생성 및 `get_or_create` 로직 구현
-    - [ ] 문서 추가(`add_documents`) 함수 구현
+    - [ ] **HNSW 파라미터 튜닝**: `M=32`, `ef_construction=200`, `ef=50`, `space="cosine"`
+    - [ ] **버전 관리**: 파일명/해시 기반 Collection 분리
+    - [ ] 메타데이터 저장 (파일명, 페이지, 토큰 인덱스)
 - [ ] **Retrievers**
-    - [ ] **BM25Retriever**: 문서 청크 기반 BM25 인덱스 생성 (키워드 검색용)
-    - [ ] **ChromaRetriever**: 유사도 기반 검색기 생성 (k=10)
-    - [ ] **EnsembleRetriever**: BM25(0.5) + Chroma(0.5) 결합
+    - [ ] **BM25Retriever**: 키워드 검색용 인덱스 생성
+    - [ ] **ChromaRetriever**: Vector 검색용
+    - [ ] **EnsembleRetriever**: Hybrid Search (BM25 + Vector)
 
 ### 2.3 고급 RAG 로직 (Advanced Features)
-- [ ] **Query Routing (질문 분류)**
-    - [ ] 프롬프트 템플릿 작성: 질문이 "데이터 검색 필요"인지 "일상 대화"인지 분류
-    - [ ] JsonOutputParser 등을 사용하여 구조화된 출력 파싱
-- [ ] **Query Expansion (Multi-Query)**
-    - [ ] 프롬프트 템플릿 작성: 원본 질문을 기반으로 유사 질문 3개 생성
-    - [ ] 생성된 3개 질문으로 각각 검색 후 결과 중복 제거(Union) 로직 구현
-- [ ] **Reranking (재순위화)**
-    - [ ] Cross-Encoder 모델(`BAAI/bge-reranker-v2-m3`) 로드
-    - [ ] 검색된 후보군(Candidate Docs)과 질문을 쌍으로 입력하여 점수 계산
-    - [ ] 상위 N개(예: 5개) 필터링 함수 구현
+- [ ] **Query Routing (Rule-based)**
+    - [ ] 단순 키워드 매칭으로 검색 필요 여부 판단 (속도 최적화)
+- [ ] **Query Expansion (Smart Expansion)**
+    - [ ] 명사 중심의 짧은 질문(20자 이하)에만 적용
+    - [ ] '정의', '차이' 등 특정 키워드 포함 시 제외
+- [ ] **Reranking (Optional)**
+    - [ ] 필요 시 `BAAI/bge-reranker-v2-m3` 적용 (옵션 처리)
+- [ ] **Context Management**
+    - [ ] LLM 입력 Context Chunk 최대 5개로 제한
 
 ### 2.4 LLM 응답 생성
 - [ ] **Prompt Engineering**
-    - [ ] 시스템 프롬프트: "당신은 유능한 비서입니다. 주어진 Context를 바탕으로 한국어로 답변하세요."
-    - [ ] 답변 형식을 지정하여 출처(Source, Page/Sheet)가 명확히 드러나도록 유도
+    - [ ] 시스템 프롬프트 최적화 (한국어 답변, 출처 명시 유도)
 - [ ] **Chain 구성**
-    - [ ] `RunnablePassthrough` 등을 활용한 LCEL(LangChain Expression Language) 체인 구성
-    - [ ] History(대화 기록)를 프롬프트에 주입하는 로직 추가
+    - [ ] LCEL 체인 구성 (History 포함)
 
 ## 3. 사용자 인터페이스 구현 (app.py)
-- [ ] **Session State 관리**
-    - [ ] `messages`: 대화 기록 저장
-    - [ ] `rag_chain`: 초기화된 RAG 체인 객체 저장 (매번 로드하지 않도록)
-    - [ ] `processing`: 처리 중 상태 플래그
+- [ ] **Session State 및 캐싱**
+    - [ ] `@st.cache_resource`: 임베딩/LLM 모델 인스턴스 전역 캐싱
+    - [ ] `st.session_state`: 대화 기록, 인덱싱 진행률, 처리 상태 관리
 - [ ] **사이드바 (설정 및 업로드)**
-    - [ ] 파일 업로더 (`st.file_uploader`, accept_multiple_files=True, type=['pdf', 'xlsx', 'xls'])
-    - [ ] "문서 처리 시작" 버튼 및 진행률 표시 (`st.spinner`, `st.progress`)
-    - [ ] 처리 완료 시 "인덱싱 완료" 토스트 메시지
+    - [ ] **비동기 인덱싱**: `threading` + `st.status` 활용 (UI 락 방지)
+    - [ ] 모델 선택 드롭다운 (Ollama 설치 모델 연동)
+    - [ ] 파싱 실패한 페이지 목록 표시
 - [ ] **메인 채팅 화면**
-    - [ ] 이전 대화 내용 렌더링 (User: 우측, AI: 좌측)
-    - [ ] `st.chat_input` 입력 처리
-    - [ ] **답변 스트리밍**: `st.write_stream` 또는 콜백을 이용한 실시간 출력
-    - [ ] **출처 아코디언**: 답변 아래에 `st.expander("참고 문서 확인")`로 검색된 문서 원문 표시
+    - [ ] 대화 내용 렌더링
+    - [ ] 답변 스트리밍 출력
+    - [ ] **출처 표시 개선**: `파일명 p.페이지번호` 형식으로 문단 하단에 링크처럼 표시 (동일 페이지 병합)
 
 ## 4. 로깅 및 디버깅 (Logging & Debugging)
-- [ ] **로거 설정**
-    - [ ] `logging` 모듈 설정 (Console 출력)
-    - [ ] 주요 단계(검색 된 문서 수, Rerank 점수, LLM 입력 프롬프트) 로깅
-- [ ] **디버그 모드 (UI 옵션)**
-    - [ ] 사이드바에 "디버그 정보 보기" 체크박스 추가
-    - [ ] 체크 시 검색된 문서(Raw Text)와 Rerank 점수를 화면에 표시
+- [ ] **상세 로깅**
+    - [ ] 질문, 답변, 소요 시간 기록
+    - [ ] 검색된 Chunk 정보, 유사도/BM25/Rerank 점수 기록
+    - [ ] Query Expansion/Routing 적용 여부 기록
 
 ## 5. 최종 테스트 및 배포
 - [ ] **단위 테스트**
-    - [ ] PDF/Excel 로드 테스트 (한글/영문)
-    - [ ] 검색 정확도 테스트 (의도한 문서가 상위에 오는지)
+    - [ ] 전처리/청킹 로직 테스트
+    - [ ] 검색 정확도 테스트
 - [ ] **통합 테스트**
-    - [ ] 전체 시나리오 수행 (업로드 -> 질문 -> 답변 -> 출처 확인)
-- [ ] **README 작성**
-    - [ ] 설치 및 실행 방법 문서화
+    - [ ] UI 비동기 동작 및 에러 핸들링 테스트
