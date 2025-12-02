@@ -8,12 +8,12 @@
 ## Phase 0: 프로젝트 초기화
 
 ### 0.1 디렉토리 구조 생성
-- [ ] 루트 디렉토리 `rag-v2/` 생성
-- [ ] `data/` (문서 저장소)
-- [ ] `chroma_db/` (Vector DB)
-- [ ] `logs/` (로그 파일)
-- [ ] `eval/` (평가 데이터)
-- [ ] `.gitignore` 생성
+- [x] 루트 디렉토리 `rag-v2/` 생성
+- [x] `data/` (문서 저장소)
+- [x] `chroma_db/` (Vector DB)
+- [x] `logs/` (로그 파일)
+- [x] `eval/` (평가 데이터)
+- [x] `.gitignore` 생성
 
 ### 0.2 환경 설정
 - [ ] Python 3.10+ 설치 확인
@@ -25,9 +25,9 @@
 - [ ] pip 업그레이드: `python -m pip install --upgrade pip`
 
 ### 0.3 Ollama 설치
-- [ ] Ollama 설치: https://ollama.com/
-- [ ] Ollama 서비스 실행 확인
-- [ ] 모델 다운로드:
+- [x] Ollama 설치: https://ollama.com/
+- [x] Ollama 서비스 실행 확인
+- [x] 모델 다운로드:
   ```bash
   ollama pull qwen2:7b
   ollama pull llama3.1:8b
@@ -49,7 +49,7 @@
 ## Phase 1: MVP 패키지 설치 및 기본 구조
 
 ### 1.1 requirements.txt 작성 (MVP 필수만)
-- [ ] `requirements.txt` 생성
+- [x] `requirements.txt` 생성
   - `langchain`
   - `langchain-community`
   - `streamlit`
@@ -61,7 +61,7 @@
 - [ ] 패키지 설치: `pip install -r requirements.txt`
 
 ### 1.2 config.yaml 템플릿 생성
-- [ ] `config.yaml` 파일 생성
+- [x] `config.yaml` 파일 생성
   - Chunk size, overlap 기본값
   - LLM 설정 (temperature, max_tokens)
   - 검색 파라미터 (top_k, context_count)
@@ -85,11 +85,11 @@
 ## Phase 2: RAG 엔진 모듈 구현
 
 ### 2.1 loaders.py - 문서 로더 (MVP: PDF, MD, TXT만)
-- [ ] `loaders.py` 파일 생성
-- [ ] `PDFLoader` 구현 (pypdf 사용)
-- [ ] `MarkdownLoader` 구현
-- [ ] `TextLoader` 구현
-- [ ] 에러 핸들링 추가:
+- [x] `loaders.py` 파일 생성
+- [x] `PDFLoader` 구현 (pypdf 사용)
+- [x] `MarkdownLoader` 구현
+- [x] `TextLoader` 구현
+- [x] 에러 핸들링 추가:
   - 파일 열기 실패
   - 인코딩 오류 (UTF-8 재시도)
   - 빈 파일 처리
@@ -102,8 +102,8 @@
 - [ ] 로드된 텍스트 길이 및 내용 출력 확인
 
 ### 2.2 텍스트 전처리 (loaders.py 내부 함수)
-- [ ] 공백 정규화 함수 구현
-- [ ] 한글 자모 복구 (`unicodedata.normalize('NFC')`)
+- [x] 공백 정규화 함수 구현
+- [x] 한글 자모 복구 (`unicodedata.normalize('NFC')`)
 - [ ] 헤더/푸터 제거 로직 (선택사항, 나중에)
 - [ ] 중복 제거 함수 (Deduplication)
 
@@ -113,19 +113,19 @@
 - [ ] 한글 깨짐 복구 확인
 
 ### 2.3 indexer.py - 인덱싱 및 청킹
-- [ ] `indexer.py` 파일 생성
-- [ ] **Chunking 함수** 구현:
+- [x] `indexer.py` 파일 생성
+- [x] **Chunking 함수** 구현:
   - 고정 크기: 600~800 토큰
   - Overlap: 100
   - RecursiveCharacterTextSplitter 사용
-- [ ] **Context Enrichment**:
+- [x] **Context Enrichment**:
   - 각 청크에 문서 제목 메타데이터 추가
   - 페이지 번호 저장
-- [ ] **파일 해시 계산** 함수
-- [ ] **Chroma 인덱스 생성** 함수:
+- [x] **파일 해시 계산** 함수
+- [x] **Chroma 인덱스 생성** 함수:
   - HNSW 파라미터 적용 (M=16, ef_construction=100, ef=30)
   - Collection 생성/로드
-- [ ] **Incremental Indexing** 로직:
+- [x] **Incremental Indexing** 로직:
   - 파일 해시 비교
   - 변경 시에만 재인덱싱
 
@@ -145,13 +145,13 @@
 - [ ] 동일 파일 재업로드 시 Incremental Indexing 동작 확인
 
 ### 2.4 retriever.py - 검색기 구현
-- [ ] `retriever.py` 파일 생성
-- [ ] **BM25Retriever** 구현
-- [ ] **ChromaRetriever** 구현 (Vector 검색)
-- [ ] **EnsembleRetriever** 구현 (BM25 + Vector 병합)
+- [x] `retriever.py` 파일 생성
+- [x] **BM25Retriever** 구현
+- [x] **ChromaRetriever** 구현 (Vector 검색)
+- [x] **EnsembleRetriever** 구현 (BM25 + Vector 병합)
 - [ ] **RRF (Reciprocal Rank Fusion)** 함수 (Advanced, 선택)
 - [ ] **Context Filtering** 함수 구현
-- [ ] **Top-K 결과 추출** 함수
+- [x] **Top-K 결과 추출** 함수
 
 ### ✅ TEST 2.4: 검색기 검증
 - [ ] BM25 검색 단독 테스트:
@@ -166,15 +166,15 @@
 - [ ] 검색 속도 측정 (< 1초 목표)
 
 ### 2.5 llm_client.py - LLM 클라이언트
-- [ ] `llm_client.py` 파일 생성
-- [ ] **Ollama 초기화** 함수
-- [ ] **System Prompt 로드** 함수 (config.yaml)
-- [ ] **Prompt Template** 구현:
+- [x] `llm_client.py` 파일 생성
+- [x] **Ollama 초기화** 함수
+- [x] **System Prompt 로드** 함수 (config.yaml)
+- [x] **Prompt Template** 구현:
   - Contextual Instructions
   - Hallucination Prevention
   - 한국어 답변 프롬프트
-- [ ] **RAG Chain** 구성 (LCEL)
-- [ ] **Timeout 및 재시도** 로직 추가
+- [x] **RAG Chain** 구성 (LCEL)
+- [x] **Timeout 및 재시도** 로직 추가
 
 ### ✅ TEST 2.5: LLM 클라이언트 검증
 - [ ] Ollama 연결 테스트
@@ -184,9 +184,9 @@
 - [ ] 응답 시간 측정 (2~4초 목표)
 
 ### 2.6 rag_engine.py - 통합 RAG 엔진
-- [ ] `rag_engine.py` 파일 생성
-- [ ] 위 모듈들 import 및 조합
-- [ ] **RAGEngine 클래스** 구현:
+- [x] `rag_engine.py` 파일 생성
+- [x] 위 모듈들 import 및 조합
+- [x] **RAGEngine 클래스** 구현:
   - `load_documents(file_paths)`
   - `index_documents(documents)`
   - `search(query, top_k=3)`
@@ -194,16 +194,16 @@
   - `run(query)` - E2E 실행
   - **Safe Mode** 구현:
     - `config.safe_mode=True`일 때 고급 기능(Rerank, Expansion) 비활성화
-- [ ] **로깅 시스템** 구현:
+- [x] **로깅 시스템** 구현:
   - 질문/답변/시간 기록
   - 유사도 점수, BM25 점수 기록
   - `logs/queries.jsonl` 저장
 
 ### 2.7 CLI 인터페이스 (Debug Tool)
-- [ ] `cli.py` 또는 `rag_engine.py`의 `__main__` 구현
-- [ ] 커맨드라인 인자 처리 (`argparse`):
+- [x] `cli.py` 또는 `rag_engine.py`의 `__main__` 구현
+- [x] 커맨드라인 인자 처리 (`argparse`):
   - `python -m rag_engine.cli "질문" --doc sample.pdf`
-- [ ] Streamlit 없이 엔진 로직만 빠르게 테스트하는 용도
+- [x] Streamlit 없이 엔진 로직만 빠르게 테스트하는 용도
 
 ### ✅ TEST 2.6: E2E RAG 파이프라인 & CLI 검증
 - [ ] CLI로 질문 수행 테스트:
@@ -224,37 +224,19 @@
 - [ ] 전체 응답 시간 측정 (< 5초 목표)
 - [ ] 로그 파일 생성 확인
 
----
-
-## Phase 3: Streamlit UI 구현 (app.py)
-
-### 3.1 기본 앱 구조
-- [ ] `app.py` 파일 생성
-- [ ] Streamlit 페이지 설정 (`st.set_page_config`)
-- [ ] **Session State 초기화**:
-  - `messages` (채팅 히스토리)
-  - `indexed_files` (인덱싱된 파일 목록)
-  - `rag_engine` (RAG 엔진 인스턴스)
-- [ ] **캐싱 설정**:
-  - `@st.cache_resource`로 모델/엔진 캐싱
-
-### ✅ TEST 3.1: 기본 앱 실행 확인
-- [ ] `streamlit run app.py` 실행
-- [ ] 페이지 로드 확인
-- [ ] Session State 초기화 확인
 - [ ] 캐싱 동작 확인 (재로드 시 캐시 사용)
 
 ### 3.2 사이드바 - 모델 선택 및 파일 업로드
 - [ ] **모델 선택** 드롭다운 구현
   - `qwen2:7b`, `llama3.1:8b` 선택
-- [ ] **파일 업로더** 구현 (`st.file_uploader`)
+- [x] **파일 업로더** 구현 (`st.file_uploader`)
   - 지원 형식: PDF, MD, TXT (MVP)
-- [ ] **비동기 인덱싱** 구현:
+- [x] **비동기 인덱싱** 구현:
   - `threading` + `st.status` 사용
   - 업로드 중 버튼 비활성화
   - 진행률 표시
-- [ ] **인덱싱 상태 표시**
-- [ ] **에러 메시지 표시**
+- [x] **인덱싱 상태 표시**
+- [x] **에러 메시지 표시**
 
 ### ✅ TEST 3.2: 파일 업로드 검증
 - [ ] PDF 파일 업로드 테스트
@@ -265,11 +247,11 @@
 - [ ] 동시 업로드 방지 확인 (버튼 비활성화)
 
 ### 3.3 메인 화면 - 채팅 인터페이스
-- [ ] **채팅 메시지 렌더링** (`st.chat_message`)
-- [ ] **질문 입력창** (`st.chat_input`)
-- [ ] **답변 생성** 로직
+- [x] **채팅 메시지 렌더링** (`st.chat_message`)
+- [x] **질문 입력창** (`st.chat_input`)
+- [x] **답변 생성** 로직
 - [ ] **스트리밍 출력** (선택사항)
-- [ ] **출처 표시**:
+- [x] **출처 표시**:
   - 형식: `파일명 p.페이지` (예: `sample.pdf p.11, p.12`)
   - 동일 페이지 병합
 - [ ] **키워드 하이라이트** (선택사항)

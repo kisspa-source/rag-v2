@@ -1,0 +1,25 @@
+# RAG Configuration
+
+rag:
+  chunk_size: 800
+  chunk_overlap: 100
+  top_k: 5
+  context_count: 3
+  
+llm:
+  model_name: "qwen2:7b"  # or "llama3.1:8b"
+  temperature: 0.3
+  max_tokens: 512
+  timeout: 120
+
+vector_db:
+  path: "./chroma_db"
+  collection_name: "rag_collection"
+  hnsw:
+    M: 16
+    ef_construction: 100
+    ef: 30
+
+security:
+  admin_password_hash: "" # SHA-256 hash
+  salt: ""

@@ -1,0 +1,13 @@
+# RAG 시스템 필수 패키지
+langchain
+langchain-community
+streamlit
+chromadb
+sentence-transformers
+pypdf
+rank_bm25
+markdown
+pyyaml
+
+# 추가 유틸리티
+python-dotenv
