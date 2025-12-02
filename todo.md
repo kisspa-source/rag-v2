@@ -2,13 +2,13 @@
 
 ## 0. 프로젝트 초기화 및 구조 설계 (Project Initialization)
 - [ ] **디렉토리 구조 생성**
-    - [ ] `rag/` (루트 디렉토리)
-    - [ ] `rag/data/` (PDF/Excel 파일 저장소)
-    - [ ] `rag/chroma_db/` (Vector DB 저장소)
-    - [ ] `rag/src/` (소스 코드 분리)
-        - [ ] `rag/src/utils.py` (로깅, 헬퍼 함수)
-        - [ ] `rag/src/rag_engine.py` (RAG 코어 로직)
-        - [ ] `rag/src/ui.py` (UI 컴포넌트)
+    - [ ] `rag-v2/` (루트 디렉토리)
+    - [ ] `rag-v2/data/` (PDF/Excel 파일 저장소)
+    - [ ] `rag-v2/chroma_db/` (Vector DB 저장소)
+    - [ ] `rag-v2/src/` (소스 코드 분리)
+        - [ ] `rag-v2/src/utils.py` (로깅, 헬퍼 함수)
+        - [ ] `rag-v2/src/rag_engine.py` (RAG 코어 로직)
+        - [ ] `rag-v2/src/ui.py` (UI 컴포넌트)
 - [ ] **환경 설정 파일**
     - [ ] `.gitignore` 생성 (`venv/`, `__pycache__/`, `.env`, `chroma_db/`, `data/` 등)
     - [ ] `requirements.txt` 작성 및 설치

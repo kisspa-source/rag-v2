@@ -32,17 +32,17 @@
 ## 제안 변경 사항
 
 ### [프로젝트 구조]
-#### [NEW] [requirements.txt](file:///C:/Users/이은수/withai/rag/requirements.txt)
+#### [NEW] [requirements.txt](file:///C:/Users/이은수/withai/rag-v2/requirements.txt)
 *   `langchain`, `langchain-community`, `streamlit`, `chromadb`, `sentence-transformers`, `pypdf`, `rank_bm25` (키워드 검색용), `openpyxl` (Excel 읽기용).
 
-#### [NEW] [app.py](file:///C:/Users/이은수/withai/rag/app.py)
+#### [NEW] [app.py](file:///C:/Users/이은수/withai/rag-v2/app.py)
 *   메인 Streamlit 애플리케이션.
 *   **기능**:
     *   채팅 인터페이스 (이전 대화 기억 - Chat History).
     *   답변 시 **출처(Source) 및 페이지 번호** 명시.
     *   사이드바: PDF 업로드 및 인덱싱 상태 표시.
 
-#### [NEW] [rag_engine.py](file:///C:/Users/이은수/withai/rag/rag_engine.py)
+#### [NEW] [rag_engine.py](file:///C:/Users/이은수/withai/rag-v2/rag_engine.py)
 *   RAG 로직 캡슐화:
     *   문서 로드 (PyPDFLoader, UnstructuredExcelLoader 등 사용).
     *   **텍스트 분할 (Chunking)**:
