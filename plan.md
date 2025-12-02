@@ -6,8 +6,9 @@
 ## 사용자 검토 필요 사항
 > [!IMPORTANT]
 > **Ollama 필수**: 사용자의 PC에 [Ollama](https://ollama.com/)가 설치되어 있고 실행 중이어야 합니다.
-> **모델 선택**: 로컬 하드웨어에서 속도와 성능의 균형을 위해 `llama3` 또는 `mistral` 모델을 시작으로 권장합니다.
+> **모델 선택**: 로컬 하드웨어에서 속도와 성능의 균형을 위해 **`qwen2:7b`** (권장, 경량) 또는 `llama3.1:8b` 모델을 권장합니다.
 > **다국어 지원**: PDF가 다양한 언어(한/영/불/독)로 제공되므로, 임베딩 모델과 LLM 프롬프트가 이를 처리할 수 있어야 합니다.
+> **하드웨어 권장**: 최소 16GB RAM (M3/M2 Mac 또는 동급 Windows PC). 메모리 부족 시 Rerank 비활성화 권장.
 
 ## 제안 아키텍처 (초안)
 
@@ -22,7 +23,7 @@
 *   **Rerank**: **Optional** (기본 OFF, 필요 시 `BAAI/bge-reranker-v2-m3` 또는 경량 모델 사용).
 *   **Query Expansion**: **Smart Expansion** (명사 중심 짧은 쿼리만 적용, '정의/차이' 등 키워드 포함 시 제외).
 *   **Query Routing**: **Rule-based Only** (속도 최적화).
-*   **Context Limit**: LLM 입력 청크 최대 5개로 제한 (속도/정확도 균형).
+*   **Context Limit**: LLM 입력 청크 **기본 3개** (16GB 환경), 최대 5개로 제한 (속도/정확도/메모리 균형).
 *   **Hybrid Search Fusion**: **Reciprocal Rank Fusion (RRF)**로 BM25와 Vector 검색 결과 병합 (연구 기반 Best Practice).
 
 ### 2. 권장 데이터베이스 (Vector Store)
@@ -113,6 +114,19 @@
         *   유사도 점수, BM25 점수, Rerank 점수.
         *   Query Expansion 적용 여부, Routing 규칙.
         *   단계별 Latency (검색, LLM 생성 등).
+
+## 성능 최적화 및 모니터링
+### 제한된 하드웨어 환경 (16GB RAM) 권장 설정
+*   **LLM 모델**: `qwen2:7b` (기본), `llama3.1:8b` (선택)
+*   **Context Limit**: 3개 (기본), 5개 (최대)
+*   **Rerank**: OFF (기본), 메모리 여유 시에만 활성화
+*   **ChromaDB HNSW**: `M=16`, `ef_construction=100`, `ef=30` (메모리 절약)
+*   **Chunk Overlap**: 100 (기본), 150 (최대)
+
+### 성능 모니터링
+*   **메모리 사용량**: Activity Monitor (Mac) / Task Manager (Windows)로 실시간 모니터링
+*   **목표**: 총 메모리 사용량 13GB 이하 유지
+*   **경고**: 15GB 초과 시 Rerank 비활성화 또는 모델 변경
 
 ## 검증 계획
 ### 자동화 테스트
