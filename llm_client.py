@@ -43,7 +43,9 @@ class LLMClient:
             system_prompt: 커스텀 시스템 프롬프트 (선택)
         """
         self.config = config
-        self.system_prompt = system_prompt or self.DEFAULT_SYSTEM_PROMPT
+        # Config에서 system_prompt가 있으면 우선 사용, 없으면 인자값 또는 기본값 사용
+        config_system_prompt = config.get('llm', {}).get('system_prompt')
+        self.system_prompt = config_system_prompt or system_prompt or self.DEFAULT_SYSTEM_PROMPT
         
         # Ollama LLM 초기화
         llm_config = config['llm']
@@ -145,6 +147,27 @@ class LLMClient:
         )
         
         logger.info("시스템 프롬프트 업데이트 완료")
+    
+    def generate_questions(self, context: str, num_questions: int = 3) -> list[str]:
+        """
+        컨텍스트를 바탕으로 추천 질문 생성
+        """
+        try:
+            prompt = f"""다음 텍스트를 읽고, 사용자가 물어볼 만한 핵심 질문 {num_questions}개를 한국어로 작성해주세요.
+질문만 나열하고, 번호나 다른 텍스트는 포함하지 마세요. 각 질문은 줄바꿈으로 구분하세요.
+
+텍스트:
+{context[:2000]}...
+
+질문:"""
+            
+            response = self.llm.invoke(prompt)
+            questions = [q.strip() for q in response.split('\n') if q.strip() and '?' in q]
+            return questions[:num_questions]
+            
+        except Exception as e:
+            logger.error(f"질문 생성 실패: {e}")
+            return []
 
 
 if __name__ == "__main__":

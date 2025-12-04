@@ -1,0 +1,5 @@
+{"question": "RAG의 주요 장점은 무엇인가요?", "expected_keywords": ["최신 정보", "환각", "출처", "보안"]}
+{"question": "RAG 시스템의 구성 요소에는 무엇이 있나요?", "expected_keywords": ["Loader", "Splitter", "Embedding", "Database", "Retriever", "LLM"]}
+{"question": "Hybrid Search란 무엇인가요?", "expected_keywords": ["키워드", "BM25", "벡터", "결합"]}
+{"question": "Rerank의 역할은 무엇인가요?", "expected_keywords": ["순위", "재조정", "관련성"]}
+{"question": "RAG는 어떻게 환각을 줄이나요?", "expected_keywords": ["근거 문서", "거짓 정보", "감소"]}

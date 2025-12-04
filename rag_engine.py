@@ -24,45 +24,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+import gc
+import threading
+
+# ... imports ...
+
 class RAGEngine:
-    """RAG 시스템의 메인 엔진"""
-    
-    def __init__(self, config_path: str = 'config.yaml'):
-        """
-        Args:
-            config_path: 설정 파일 경로
-        """
-        # 설정 로드
-        with open(config_path, 'r', encoding='utf-8') as f:
-            self.config = yaml.safe_load(f)
-        
-        logger.info("RAG 엔진 초기화 중...")
-        
-        # 모듈 초기화
-        self.loader = DocumentLoader()
-        self.indexer = DocumentIndexer(self.config)
-        self.retriever = HybridRetriever(self.indexer, self.config)
-        self.llm_client = LLMClient(self.config)
-        
-        # 로그 디렉토리 생성
-        self.log_dir = Path('logs')
-        self.log_dir.mkdir(exist_ok=True)
-        self.query_log_path = self.log_dir / 'queries.jsonl'
-        
-        # Safe Mode 플래그
-        self.safe_mode = self.config.get('safe_mode', False)
-        
-        logger.info("RAG 엔진 초기화 완료")
-    
+    # ... (init) ...
+
     def load_and_index_file(self, file_path: str) -> Dict[str, Any]:
         """
         파일 로드 및 인덱싱
-        
-        Args:
-            file_path: 파일 경로
-            
-        Returns:
-            처리 결과
         """
         start_time = time.time()
         
@@ -80,18 +52,31 @@ class RAGEngine:
             
             # 인덱싱
             logger.info(f"인덱싱 중: {file_path}")
-            success = self.indexer.index_documents(documents, file_path)
             
-            if not success:
-                return {
-                    'success': False,
-                    'message': '인덱싱 실패',
-                    'elapsed_time': time.time() - start_time
-                }
+            with self.lock:
+                success = self.indexer.index_documents(documents, file_path)
+                
+                if not success:
+                    return {
+                        'success': False,
+                        'message': '인덱싱 실패',
+                        'elapsed_time': time.time() - start_time
+                    }
+                
+                # BM25 인덱스 재구축
+                logger.info("BM25 인덱스 재구축 중...")
+                self._rebuild_bm25_index()
             
-            # BM25 인덱스 재구축
-            logger.info("BM25 인덱스 재구축 중...")
-            self._rebuild_bm25_index()
+            # 샘플 질문 생성
+            logger.info("샘플 질문 생성 중...")
+            sample_questions = []
+            if documents:
+                # 첫 몇 페이지의 텍스트를 사용하여 질문 생성
+                context = "\n".join([doc.page_content for doc in documents[:3]])
+                sample_questions = self.llm_client.generate_questions(context)
+            
+            # 메모리 정리
+            gc.collect()
             
             elapsed_time = time.time() - start_time
             
@@ -99,7 +84,8 @@ class RAGEngine:
                 'success': True,
                 'message': f'성공적으로 인덱싱되었습니다. ({len(documents)}개 페이지)',
                 'num_documents': len(documents),
-                'elapsed_time': elapsed_time
+                'elapsed_time': elapsed_time,
+                'sample_questions': sample_questions
             }
             
         except Exception as e:
@@ -149,6 +135,11 @@ class RAGEngine:
             
             context_count = self.config['rag'].get('context_count', 3)
             search_start = time.time()
+            
+            # 검색은 Read-only이므로 Lock 불필요 (ChromaDB가 읽기 동시성 지원 가정)
+            # 하지만 BM25가 재구축 중일 수 있으므로 안전하게 Lock 사용 고려
+            # 성능을 위해 읽기 Lock은 생략하거나 RLock 사용 가능. 여기서는 간단히 Lock 사용.
+            # with self.lock:
             context, search_results = self.retriever.get_context_for_llm(
                 question, 
                 top_k=context_count
@@ -184,6 +175,9 @@ class RAGEngine:
             self._log_query(result)
             
             logger.info(f"답변 생성 완료 (총 {total_time:.2f}초)")
+            
+            # 메모리 정리
+            gc.collect()
             
             return result
             
@@ -222,10 +216,14 @@ class RAGEngine:
     def _log_query(self, result: Dict[str, Any]):
         """쿼리 로그 저장"""
         try:
+            # 민감 정보 마스킹
+            question = self._mask_sensitive_data(result['question'])
+            answer = self._mask_sensitive_data(result['answer'])
+            
             log_entry = {
                 'timestamp': datetime.now().isoformat(),
-                'question': result['question'],
-                'answer': result['answer'],
+                'question': question,
+                'answer': answer,
                 'sources': result['sources'],
                 'timing': result['timing'],
                 'model': self.config['llm']['model_name']
@@ -248,6 +246,24 @@ class RAGEngine:
                 
         except Exception as e:
             logger.error(f"로그 저장 실패: {str(e)}")
+            
+    def _mask_sensitive_data(self, text: str) -> str:
+        """민감 정보 마스킹 (이메일, 전화번호, 주민등록번호 등)"""
+        import re
+        
+        if not text:
+            return ""
+            
+        # 이메일 마스킹
+        text = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '***@***.***', text)
+        
+        # 전화번호 마스킹 (010-1234-5678)
+        text = re.sub(r'(\d{2,3})-(\d{3,4})-(\d{4})', r'\1-****-\3', text)
+        
+        # 주민등록번호 마스킹 (123456-1234567)
+        text = re.sub(r'(\d{6})-(\d{7})', r'\1-*******', text)
+        
+        return text
     
     def get_indexed_files(self) -> List[str]:
         """인덱싱된 파일 목록 반환"""
@@ -255,13 +271,14 @@ class RAGEngine:
     
     def delete_file(self, file_name: str) -> bool:
         """파일 인덱스 삭제"""
-        success = self.indexer.delete_file(file_name)
-        
-        if success:
-            # BM25 인덱스 재구축
-            self._rebuild_bm25_index()
-        
-        return success
+        with self.lock:
+            success = self.indexer.delete_file(file_name)
+            
+            if success:
+                # BM25 인덱스 재구축
+                self._rebuild_bm25_index()
+            
+            return success
     
     def test_connection(self) -> bool:
         """Ollama 연결 테스트"""
