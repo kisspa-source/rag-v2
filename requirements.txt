@@ -8,6 +8,14 @@ pypdf
 rank_bm25
 markdown
 pyyaml
+openpyxl
+python-docx
+python-pptx
+torch
+transformers
+pytesseract
+pdf2image
+pillow
 
 # 추가 유틸리티
 python-dotenv

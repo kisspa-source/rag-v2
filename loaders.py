@@ -12,6 +12,22 @@ import logging
 from langchain_core.documents import Document
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 
+# Office Loaders
+try:
+    import docx
+    import pptx
+    import openpyxl
+except ImportError:
+    pass
+
+# OCR Loaders
+try:
+    import pytesseract
+    from pdf2image import convert_from_path
+    from PIL import Image
+except ImportError:
+    pass
+
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,7 +36,7 @@ logger = logging.getLogger(__name__)
 class DocumentLoader:
     """다양한 형식의 문서를 로드하고 전처리하는 클래스"""
     
-    SUPPORTED_EXTENSIONS = {'.pdf', '.md', '.txt'}
+    SUPPORTED_EXTENSIONS = {'.pdf', '.md', '.txt', '.docx', '.pptx', '.xlsx'}
     
     def __init__(self):
         self.stats = {
@@ -67,6 +83,12 @@ class DocumentLoader:
                 documents = self._load_markdown(file_path)
             elif extension == '.txt':
                 documents = self._load_text(file_path)
+            elif extension == '.docx':
+                documents = self._load_docx(file_path)
+            elif extension == '.pptx':
+                documents = self._load_pptx(file_path)
+            elif extension == '.xlsx':
+                documents = self._load_xlsx(file_path)
             else:
                 documents = []
             
@@ -86,13 +108,54 @@ class DocumentLoader:
             return []
     
     def _load_pdf(self, file_path: str) -> List[Document]:
-        """PDF 파일 로드"""
+        """PDF 파일 로드 (OCR Fallback 포함)"""
         try:
             loader = PyPDFLoader(file_path)
             documents = loader.load()
+            
+            # 텍스트 추출 품질 확인 및 OCR Fallback
+            ocr_needed = False
+            total_text_len = sum(len(doc.page_content.strip()) for doc in documents)
+            avg_text_len = total_text_len / len(documents) if documents else 0
+            
+            # 텍스트가 너무 적으면(페이지당 50자 미만) 스캔본으로 간주
+            if avg_text_len < 50:
+                logger.info(f"텍스트 추출 품질 저조 (평균 {avg_text_len:.1f}자). OCR을 시도합니다: {file_path}")
+                ocr_needed = True
+            
+            if ocr_needed:
+                return self._ocr_pdf(file_path)
+                
             return documents
         except Exception as e:
             logger.error(f"PDF 로드 오류: {str(e)}")
+            raise
+
+    def _ocr_pdf(self, file_path: str) -> List[Document]:
+        """PDF OCR 처리"""
+        try:
+            logger.info("PDF를 이미지로 변환 중...")
+            images = convert_from_path(file_path)
+            documents = []
+            
+            for i, image in enumerate(images):
+                logger.info(f"OCR 처리 중 (페이지 {i+1}/{len(images)})...")
+                # 한글+영어 OCR
+                text = pytesseract.image_to_string(image, lang='kor+eng')
+                
+                if text.strip():
+                    documents.append(Document(
+                        page_content=text,
+                        metadata={"source": file_path, "page": i+1, "ocr": True}
+                    ))
+            
+            return documents
+        except Exception as e:
+            logger.error(f"OCR 처리 실패: {str(e)}")
+            # OCR 실패 시 빈 리스트 반환보다는 에러 전파가 나을 수 있음, 
+            # 하지만 여기서는 로더 특성상 빈 리스트나 부분 성공도 고려
+            if 'poppler' in str(e).lower():
+                logger.error("Poppler가 설치되지 않은 것 같습니다. 'brew install poppler'를 확인하세요.")
             raise
     
     def _load_markdown(self, file_path: str) -> List[Document]:
@@ -131,6 +194,86 @@ class DocumentLoader:
             return documents
         except Exception as e:
             logger.error(f"텍스트 로드 오류 ({encoding}): {str(e)}")
+            raise
+
+    def _load_docx(self, file_path: str) -> List[Document]:
+        """Word 파일 로드"""
+        try:
+            doc = docx.Document(file_path)
+            full_text = []
+            for para in doc.paragraphs:
+                if para.text.strip():
+                    full_text.append(para.text)
+            
+            text = "\n\n".join(full_text)
+            return [Document(page_content=text, metadata={"source": file_path})]
+        except Exception as e:
+            logger.error(f"Word 로드 오류: {str(e)}")
+            raise
+
+    def _load_pptx(self, file_path: str) -> List[Document]:
+        """PowerPoint 파일 로드"""
+        try:
+            prs = pptx.Presentation(file_path)
+            documents = []
+            
+            for i, slide in enumerate(prs.slides):
+                slide_text = []
+                for shape in slide.shapes:
+                    if hasattr(shape, "text"):
+                        if shape.text.strip():
+                            slide_text.append(shape.text)
+                
+                if slide_text:
+                    text = "\n".join(slide_text)
+                    documents.append(Document(
+                        page_content=text, 
+                        metadata={"source": file_path, "page": i+1}
+                    ))
+            
+            return documents
+        except Exception as e:
+            logger.error(f"PPTX 로드 오류: {str(e)}")
+            raise
+
+    def _load_xlsx(self, file_path: str) -> List[Document]:
+        """Excel 파일 로드"""
+        try:
+            wb = openpyxl.load_workbook(file_path, data_only=True)
+            documents = []
+            
+            for sheet_name in wb.sheetnames:
+                sheet = wb[sheet_name]
+                sheet_text = []
+                
+                # 헤더 읽기
+                headers = []
+                for row in sheet.iter_rows(min_row=1, max_row=1, values_only=True):
+                    headers = [str(h) if h is not None else f"Col{i}" for i, h in enumerate(row)]
+                
+                # 데이터 읽기
+                for row in sheet.iter_rows(min_row=2, values_only=True):
+                    row_text = []
+                    has_data = False
+                    for i, cell in enumerate(row):
+                        if cell is not None:
+                            header = headers[i] if i < len(headers) else f"Col{i}"
+                            row_text.append(f"{header}: {cell}")
+                            has_data = True
+                    
+                    if has_data:
+                        sheet_text.append(", ".join(row_text))
+                
+                if sheet_text:
+                    text = f"Sheet: {sheet_name}\n" + "\n".join(sheet_text)
+                    documents.append(Document(
+                        page_content=text,
+                        metadata={"source": file_path, "sheet": sheet_name}
+                    ))
+            
+            return documents
+        except Exception as e:
+            logger.error(f"Excel 로드 오류: {str(e)}")
             raise
     
     def _preprocess_documents(self, documents: List[Document], file_path: str) -> List[Document]:

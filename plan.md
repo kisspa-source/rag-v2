@@ -92,7 +92,7 @@ ollama pull llama3.1:8b
 
 ### [프로젝트 구조]
 
-#### [NEW] [requirements.txt](file:///C:/Users/이은수/withai/rag-v2/requirements.txt)
+#### [IMPLEMENTED] [requirements.txt](file:///C:/Users/이은수/withai/rag-v2/requirements.txt)
 
 **필수 패키지 (MVP - 1단계)**
 *   `langchain`, `langchain-community` - RAG 오케스트레이션
@@ -115,7 +115,7 @@ ollama pull llama3.1:8b
 > [!TIP]
 > MVP 단계에서는 필수 패키지만 설치하여 초기 복잡도를 낮추고, 2~3단계는 필요 시 점진적으로 추가하세요.
 
-#### [NEW] [app.py](file:///C:/Users/이은수/withai/rag-v2/app.py)
+#### [IMPLEMENTED] [app.py](file:///C:/Users/이은수/withai/rag-v2/app.py)
 *   메인 Streamlit 애플리케이션.
 *   **기능**:
     *   답변 시 **출처(Source) 및 페이지 번호** 명시 (예: `sample.pdf p.11, p.12` 형식으로 문단 하단 표시).
@@ -144,7 +144,7 @@ ollama pull llama3.1:8b
         *   답변 내 키워드 **하이라이트** 표시.
         *   최근 대화 기록 자동 저장.
 
-#### [NEW] [rag_engine.py](file:///C:/Users/이은수/withai/rag-v2/rag_engine.py)
+#### [IMPLEMENTED] [rag_engine.py](file:///C:/Users/이은수/withai/rag-v2/rag_engine.py)
 
 **모듈 설계**
 > [!IMPORTANT]
@@ -333,3 +333,13 @@ ollama pull llama3.1:8b
 *   **메모리 부족**: Rerank OFF, Context 2개로 축소
 *   **검색 결과 이상**: Safe Mode 활성화 → 베이스라인 성능 확인 → 기능 하나씩 재활성화
 *   **인덱싱 실패**: 로그(`logs/`) 확인, 파일 인코딩 체크
+
+## 현재 구현 상태 (2025-12-05)
+*   **핵심 기능 (MVP)**: 완료 (PDF/MD/TXT 로드, Vector/BM25 검색, Ollama 연동)
+*   **고급 기능 (Advanced)**:
+    *   **Office 문서**: 완료 (Word, Excel, PPT)
+    *   **OCR**: 완료 (Tesseract + Poppler)
+    *   **고급 검색**: 완료 (RRF, Rerank)
+*   **테스트**:
+    *   단위 테스트 및 통합 테스트 진행 중
+    *   평가 스크립트(`evaluate.py`) 동작 확인

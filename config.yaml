@@ -1,10 +1,15 @@
 # RAG Configuration
 
-rag:
+rag:  # 검색 설정
   chunk_size: 800
   chunk_overlap: 100
   top_k: 5
   context_count: 3
+  
+  # 고급 검색 설정
+  search_type: "hybrid_rrf"       # hybrid_weighted or hybrid_rrf
+  use_rerank: true                # true to enable reranking
+  reranker_model: "BAAI/bge-reranker-v2-m3"
   
 llm:
   model_name: "qwen2:7b"  # or "llama3.1:8b"

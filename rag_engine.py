@@ -61,7 +61,7 @@ class RAGEngine:
         
         # 리트리버 (BM25 + Vector)
         self.retriever = HybridRetriever(
-            indexer=self.indexer,
+            vector_indexer=self.indexer,
             config=self.config
         )
         

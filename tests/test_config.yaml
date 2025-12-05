@@ -1,0 +1,18 @@
+llm:
+  max_tokens: 200
+  model_name: qwen2:7b
+  temperature: 0.1
+rag:
+  chunk_overlap: 50
+  chunk_size: 500
+  context_count: 3
+  search_type: hybrid_weighted
+  top_k: 3
+  use_rerank: false
+vector_db:
+  collection_name: test_collection
+  hnsw:
+    M: 16
+    ef: 30
+    ef_construction: 100
+  path: tests/chroma_db

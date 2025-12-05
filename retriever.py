@@ -5,6 +5,8 @@ import logging
 from typing import List, Dict, Any
 from rank_bm25 import BM25Okapi
 from langchain_core.documents import Document
+from sentence_transformers import CrossEncoder
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,20 @@ class HybridRetriever:
         self.bm25_index = None
         self.corpus = []  # BM25용 문서 코퍼스
         self.corpus_metadata = []  # 문서 메타데이터
+        
+        # Reranker 모델 초기화 (Lazy Loading)
+        self.reranker = None
+        
+    def _load_reranker(self):
+        """Reranker 모델 로드"""
+        if self.reranker is None:
+            model_name = self.config['rag'].get('reranker_model', 'BAAI/bge-reranker-v2-m3')
+            logger.info(f"Reranker 모델 로드 중: {model_name}")
+            try:
+                self.reranker = CrossEncoder(model_name)
+                logger.info("Reranker 모델 로드 완료")
+            except Exception as e:
+                logger.error(f"Reranker 모델 로드 실패: {str(e)}")
         
     def build_bm25_index(self, documents: List[Document]):
         """
@@ -181,6 +197,71 @@ class HybridRetriever:
         logger.info(f"Hybrid 검색 결과: {len(top_results)}개 (alpha={alpha})")
         
         return top_results
+
+    def rrf_merge(self, bm25_results: List[Dict[str, Any]], vector_results: List[Dict[str, Any]], k: int = 60) -> List[Dict[str, Any]]:
+        """
+        Reciprocal Rank Fusion (RRF) 병합
+        Score = 1 / (k + rank)
+        """
+        merged_scores = {}
+        content_map = {}
+        
+        # BM25 순위 점수 계산
+        for rank, result in enumerate(bm25_results):
+            content = result['content']
+            content_map[content] = result
+            if content not in merged_scores:
+                merged_scores[content] = 0.0
+            merged_scores[content] += 1 / (k + rank + 1)
+            
+        # Vector 순위 점수 계산
+        for rank, result in enumerate(vector_results):
+            content = result['content']
+            content_map[content] = result  # 덮어쓰기 (메타데이터는 동일 가정)
+            if content not in merged_scores:
+                merged_scores[content] = 0.0
+            merged_scores[content] += 1 / (k + rank + 1)
+            
+        # 결과 정렬
+        final_results = []
+        for content, score in merged_scores.items():
+            result = content_map[content].copy()
+            result['score'] = score
+            result['source'] = 'rrf'
+            final_results.append(result)
+            
+        final_results.sort(key=lambda x: x['score'], reverse=True)
+        return final_results
+
+    def rerank(self, query: str, results: List[Dict[str, Any]], top_k: int = 5) -> List[Dict[str, Any]]:
+        """
+        Cross-Encoder를 사용한 재순위화 (Rerank)
+        """
+        if not results:
+            return []
+            
+        self._load_reranker()
+        if not self.reranker:
+            logger.warning("Reranker 모델이 없어 재순위화를 건너뜁니다.")
+            return results[:top_k]
+            
+        # (Query, Document) 쌍 생성
+        pairs = [[query, r['content']] for r in results]
+        
+        # 점수 계산
+        scores = self.reranker.predict(pairs)
+        
+        # 결과에 점수 반영 및 정렬
+        reranked_results = []
+        for i, result in enumerate(results):
+            new_result = result.copy()
+            new_result['rerank_score'] = float(scores[i])
+            reranked_results.append(new_result)
+            
+        reranked_results.sort(key=lambda x: x['rerank_score'], reverse=True)
+        
+        logger.info(f"Rerank 완료 (Top {top_k})")
+        return reranked_results[:top_k]
     
     def get_context_for_llm(self, query: str, top_k: int = 3) -> tuple[str, List[Dict[str, Any]]]:
         """
@@ -193,8 +274,26 @@ class HybridRetriever:
         Returns:
             (컨텍스트 문자열, 검색 결과 리스트)
         """
-        # Hybrid 검색 수행
-        results = self.hybrid_search(query, top_k=top_k)
+        # 설정 확인
+        search_type = self.config['rag'].get('search_type', 'hybrid_weighted')
+        use_rerank = self.config['rag'].get('use_rerank', False)
+        
+        # 1. 1차 검색 (Retrieval)
+        if search_type == 'hybrid_rrf':
+            # RRF 사용 시 더 많은 후보군 가져오기
+            bm25_res = self.bm25_search(query, top_k=50)
+            vector_res = self.vector_search(query, top_k=50)
+            results = self.rrf_merge(bm25_res, vector_res)
+            # Rerank 안 할거면 여기서 자르기
+            if not use_rerank:
+                results = results[:top_k]
+        else:
+            # 기본 Weighted Hybrid
+            results = self.hybrid_search(query, top_k=50 if use_rerank else top_k)
+            
+        # 2. 2차 검색 (Reranking)
+        if use_rerank:
+            results = self.rerank(query, results, top_k=top_k)
         
         if not results:
             return "관련 문서를 찾을 수 없습니다.", []
