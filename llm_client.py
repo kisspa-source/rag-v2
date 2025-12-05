@@ -6,9 +6,9 @@ import time
 from typing import Dict, Any, Optional
 
 from langchain_community.llms import Ollama
-from langchain.prompts import PromptTemplate
-from langchain.schema.runnable import RunnablePassthrough
-from langchain.schema.output_parser import StrOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
 logger = logging.getLogger(__name__)
 

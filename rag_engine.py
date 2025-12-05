@@ -9,7 +9,7 @@ from pathlib import Path
 from datetime import datetime
 
 import yaml
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 from loaders import DocumentLoader, load_documents
 from indexer import DocumentIndexer
@@ -30,7 +30,45 @@ import threading
 # ... imports ...
 
 class RAGEngine:
-    # ... (init) ...
+    """통합 RAG 엔진 - 문서 로드, 인덱싱, 검색, 답변 생성"""
+    
+    def __init__(self, config_path: str = "config.yaml"):
+        """
+        RAG 엔진 초기화
+        
+        Args:
+            config_path: 설정 파일 경로
+        """
+        # 설정 로드
+        with open(config_path, 'r', encoding='utf-8') as f:
+            self.config = yaml.safe_load(f)
+        
+        # 동시성 제어를 위한 Lock
+        self.lock = threading.Lock()
+        
+        # 로그 경로 설정
+        self.query_log_path = Path("logs/queries.jsonl")
+        self.query_log_path.parent.mkdir(exist_ok=True)
+        
+        # 모듈 초기화
+        logger.info("RAG 엔진 초기화 중...")
+        
+        # 문서 로더
+        self.loader = DocumentLoader()
+        
+        # 인덱서 (임베딩 모델 포함)
+        self.indexer = DocumentIndexer(self.config)
+        
+        # 리트리버 (BM25 + Vector)
+        self.retriever = HybridRetriever(
+            indexer=self.indexer,
+            config=self.config
+        )
+        
+        # LLM 클라이언트
+        self.llm_client = LLMClient(self.config)
+        
+        logger.info("RAG 엔진 초기화 완료")
 
     def load_and_index_file(self, file_path: str) -> Dict[str, Any]:
         """

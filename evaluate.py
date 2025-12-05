@@ -3,7 +3,6 @@ import time
 import argparse
 from pathlib import Path
 from typing import List, Dict, Any
-import pandas as pd
 from rag_engine import RAGEngine
 
 def load_qa_pairs(file_path: str) -> List[Dict[str, Any]]:

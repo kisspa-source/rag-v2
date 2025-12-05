@@ -4,7 +4,7 @@
 import logging
 from typing import List, Dict, Any
 from rank_bm25 import BM25Okapi
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 logger = logging.getLogger(__name__)
 

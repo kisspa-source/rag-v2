@@ -3,3 +3,10 @@
 {"question": "Hybrid Search란 무엇인가요?", "expected_keywords": ["키워드", "BM25", "벡터", "결합"]}
 {"question": "Rerank의 역할은 무엇인가요?", "expected_keywords": ["순위", "재조정", "관련성"]}
 {"question": "RAG는 어떻게 환각을 줄이나요?", "expected_keywords": ["근거 문서", "거짓 정보", "감소"]}
+{"question": "Document Loader의 역할은 무엇인가요?", "expected_keywords": ["문서", "텍스트", "변환"]}
+{"question": "Text Splitter는 왜 필요한가요?", "expected_keywords": ["청크", "Chunk", "나눕"]}
+{"question": "Embedding Model은 어떤 역할을 하나요?", "expected_keywords": ["텍스트", "벡터", "변환"]}
+{"question": "Vector Database의 역할은 무엇인가요?", "expected_keywords": ["벡터", "저장", "유사도", "검색"]}
+{"question": "Query Expansion이란 무엇인가요?", "expected_keywords": ["질문", "확장", "재구성", "검색"]}
+{"question": "Metadata Filtering은 어떻게 활용되나요?", "expected_keywords": ["메타데이터", "날짜", "검색", "범위"]}
+{"question": "RAG 시스템에서 LLM의 역할은 무엇인가요?", "expected_keywords": ["검색", "문서", "답변", "생성"]}

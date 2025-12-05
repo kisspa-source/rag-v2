@@ -7,8 +7,8 @@ import logging
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
-from langchain.schema import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import chromadb
 from chromadb.config import Settings
