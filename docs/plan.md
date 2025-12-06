@@ -143,6 +143,7 @@ ollama pull llama3.1:8b
         *   업로드 후 **샘플 질문 자동 추천** (문서 목차 기반).
         *   답변 내 키워드 **하이라이트** 표시.
         *   최근 대화 기록 자동 저장.
+        *   **다국어 UI 지원**: 한국어/영어 인터페이스 전환 기능.
 
 #### [IMPLEMENTED] [rag_engine.py](file:///C:/Users/이은수/withai/rag-v2/rag_engine.py)
 
