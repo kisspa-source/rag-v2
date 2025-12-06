@@ -40,9 +40,28 @@ class DocumentIndexer:
         )
         
         # 임베딩 모델 초기화
+        embedding_config = config.get('embedding', {})
+        self.model_name = embedding_config.get('model_name', "BAAI/bge-m3")
+        device_config = embedding_config.get('device', 'auto')
+        self.batch_size = embedding_config.get('batch_size', 32)
+        
+        # 장치 자동 감지
+        if device_config == 'auto':
+            import torch
+            if torch.cuda.is_available():
+                self.device = 'cuda'
+            elif torch.backends.mps.is_available():
+                self.device = 'mps'
+            else:
+                self.device = 'cpu'
+        else:
+            self.device = device_config
+            
+        logger.info(f"임베딩 모델 초기화: {self.model_name} (Device: {self.device})")
+        
         self.embeddings = HuggingFaceEmbeddings(
-            model_name="BAAI/bge-m3",
-            model_kwargs={'device': 'cpu'},
+            model_name=self.model_name,
+            model_kwargs={'device': self.device},
             encode_kwargs={'normalize_embeddings': True}
         )
         
@@ -169,16 +188,30 @@ class DocumentIndexer:
                 chunk_texts.append(chunk.page_content)
                 chunk_metadatas.append(chunk.metadata)
             
-            # 임베딩 생성 및 저장
-            logger.info(f"임베딩 생성 중... ({len(chunk_texts)}개 청크)")
-            embeddings = self.embeddings.embed_documents(chunk_texts)
+            # 임베딩 생성 및 저장 (Batch Processing)
+            total_chunks = len(chunk_texts)
+            logger.info(f"임베딩 생성 시작 (총 {total_chunks}개 청크, Batch Size: {self.batch_size})")
             
-            self.collection.add(
-                ids=chunk_ids,
-                embeddings=embeddings,
-                documents=chunk_texts,
-                metadatas=chunk_metadatas
-            )
+            for i in range(0, total_chunks, self.batch_size):
+                batch_texts = chunk_texts[i:i + self.batch_size]
+                batch_ids = chunk_ids[i:i + self.batch_size]
+                batch_metadatas = chunk_metadatas[i:i + self.batch_size]
+                
+                # 임베딩 생성
+                batch_embeddings = self.embeddings.embed_documents(batch_texts)
+                
+                # ChromaDB 추가
+                self.collection.add(
+                    ids=batch_ids,
+                    embeddings=batch_embeddings,
+                    documents=batch_texts,
+                    metadatas=batch_metadatas
+                )
+                
+                # 진행률 로그
+                progress = min(i + self.batch_size, total_chunks)
+                logger.info(f"진행률: {progress}/{total_chunks} ({progress/total_chunks*100:.1f}%)")
+
             
             # 해시 캐시 업데이트
             self.file_hashes[file_name] = file_hash
