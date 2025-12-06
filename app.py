@@ -130,7 +130,7 @@ def main():
                         try:
                             # 인덱싱
                             st.write("📖 문서 로드 중...")
-                            result = engine.load_and_index_file(tmp_path)
+                            result = engine.load_and_index_file(tmp_path, original_filename=uploaded_file.name)
                             
                             if result['success']:
                                 status.update(label="✅ 인덱싱 완료!", state="complete")

@@ -70,7 +70,7 @@ class RAGEngine:
         
         logger.info("RAG 엔진 초기화 완료")
 
-    def load_and_index_file(self, file_path: str) -> Dict[str, Any]:
+    def load_and_index_file(self, file_path: str, original_filename: str = None) -> Dict[str, Any]:
         """
         파일 로드 및 인덱싱
         """
@@ -78,8 +78,9 @@ class RAGEngine:
         
         try:
             # 문서 로드
-            logger.info(f"파일 로드 중: {file_path}")
-            documents = self.loader.load_file(file_path)
+            display_name = original_filename if original_filename else file_path
+            logger.info(f"파일 로드 중: {display_name}")
+            documents = self.loader.load_file(file_path, original_filename=original_filename)
             
             if not documents:
                 return {
@@ -89,10 +90,10 @@ class RAGEngine:
                 }
             
             # 인덱싱
-            logger.info(f"인덱싱 중: {file_path}")
+            logger.info(f"인덱싱 중: {display_name}")
             
             with self.lock:
-                success = self.indexer.index_documents(documents, file_path)
+                success = self.indexer.index_documents(documents, file_path, original_filename=original_filename)
                 
                 if not success:
                     return {

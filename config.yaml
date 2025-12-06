@@ -1,60 +1,77 @@
-# RAG Configuration
-
-rag:  # 검색 설정
-  chunk_size: 800
-  chunk_overlap: 100
-  top_k: 5
-  context_count: 3
-  
-  # 고급 검색 설정
-  search_type: "hybrid_rrf"       # hybrid_weighted or hybrid_rrf
-  use_rerank: true                # true to enable reranking
-  reranker_model: "BAAI/bge-reranker-v2-m3"
-  
 llm:
-  model_name: "qwen2:7b"  # or "llama3.1:8b"
-  temperature: 0.3
   max_tokens: 512
-  timeout: 120
+  model_name: llama3.1:8b
+  system_prompt: '당신은 제공된 문서를 바탕으로 질문에 답변하는 유능한 어시스턴트입니다.
 
+
+    다음 규칙을 준수하세요:
+
+    1. 제공된 컨텍스트 내용만을 사용하여 답변하세요.
+
+    2. 컨텍스트에 답이 없으면 "제공된 문서에서 해당 정보를 찾을 수 없습니다"라고 답변하세요.
+
+    3. 추측하거나 컨텍스트 외의 정보를 사용하지 마세요.
+
+    4. 답변은 명확하고 간결하게 작성하세요.
+
+    5. 가능한 경우 출처(문서 이름, 페이지)를 언급하세요.
+
+
+    컨텍스트:
+
+    {context}
+
+
+    질문: {question}
+
+
+    답변:'
+  temperature: 0.09
+  timeout: 120
+presets:
+  16GB:
+    llm:
+      max_tokens: 512
+      model_name: qwen2:7b
+    rag:
+      chunk_overlap: 100
+      chunk_size: 800
+      context_count: 3
+      top_k: 5
+  32GB:
+    llm:
+      max_tokens: 1024
+      model_name: llama3.1:8b
+    rag:
+      chunk_overlap: 150
+      chunk_size: 1000
+      context_count: 5
+      top_k: 10
+  8GB:
+    llm:
+      max_tokens: 256
+      model_name: qwen2:7b
+    rag:
+      chunk_overlap: 50
+      chunk_size: 600
+      context_count: 2
+      top_k: 3
+  current: 16GB
+rag:
+  chunk_overlap: 100
+  chunk_size: 800
+  context_count: 3
+  reranker_model: BAAI/bge-reranker-v2-m3
+  search_type: hybrid_rrf
+  top_k: 5
+  use_rerank: true
+security:
+  admin_password_hash: bd066069d4a5a32b46294b634ebb6af447e5d889bfe3ed2b04dd70d368de4faf
+  salt: 90631818f12c2fb7f062e976f7a30b10
 vector_db:
-  path: "./chroma_db"
-  collection_name: "rag_collection"
+  collection_name: rag_collection
   hnsw:
     M: 16
-    ef_construction: 100
     ef: 30
-
-security:
-  admin_password_hash: "bd066069d4a5a32b46294b634ebb6af447e5d889bfe3ed2b04dd70d368de4faf" # SHA-256 hash for 'admin123'
-  salt: "90631818f12c2fb7f062e976f7a30b10"
-
-presets:
-  current: "16GB"
-  "8GB":
-    rag:
-      chunk_size: 600
-      chunk_overlap: 50
-      top_k: 3
-      context_count: 2
-    llm:
-      model_name: "qwen2:7b"
-      max_tokens: 256
-  "16GB":
-    rag:
-      chunk_size: 800
-      chunk_overlap: 100
-      top_k: 5
-      context_count: 3
-    llm:
-      model_name: "qwen2:7b"
-      max_tokens: 512
-  "32GB":
-    rag:
-      chunk_size: 1000
-      chunk_overlap: 150
-      top_k: 10
-      context_count: 5
-    llm:
-      model_name: "llama3.1:8b"
-      max_tokens: 1024
+    ef_construction: 100
+  path: ./chroma_db

@@ -121,21 +121,24 @@ class DocumentIndexer:
         
         return all_chunks
     
-    def index_documents(self, documents: List[Document], file_path: str) -> bool:
+    def index_documents(self, documents: List[Document], file_path: str, original_filename: str = None) -> bool:
         """
         문서를 인덱싱 (Incremental Indexing 지원)
         
         Args:
             documents: 인덱싱할 Document 리스트
             file_path: 원본 파일 경로
+            original_filename: 원본 파일명 (옵션)
             
         Returns:
             성공 여부
         """
         try:
-            # 파일 해시 계산
+            # 파일 해시 계산 (실제 파일 내용 기준)
             file_hash = self._calculate_file_hash(file_path)
-            file_name = Path(file_path).name
+            
+            # 식별자로는 원본 파일명 사용 (없으면 파일 경로의 이름)
+            file_name = original_filename if original_filename else Path(file_path).name
             
             # 기존 해시와 비교 (Incremental Indexing)
             if file_name in self.file_hashes:

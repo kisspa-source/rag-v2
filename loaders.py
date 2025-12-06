@@ -46,12 +46,13 @@ class DocumentLoader:
             'error_messages': []
         }
     
-    def load_file(self, file_path: str) -> List[Document]:
+    def load_file(self, file_path: str, original_filename: str = None) -> List[Document]:
         """
         파일 확장자에 따라 적절한 로더를 선택하여 문서 로드
         
         Args:
             file_path: 로드할 파일 경로
+            original_filename: 원본 파일명 (옵션)
             
         Returns:
             Document 객체 리스트
@@ -66,6 +67,12 @@ class DocumentLoader:
             return []
         
         extension = path.suffix.lower()
+        
+        # 원본 파일명이 있으면 그 확장자도 체크 (temp file은 확장자가 없을 수도 있음)
+        if original_filename:
+            orig_ext = Path(original_filename).suffix.lower()
+            if orig_ext:
+                extension = orig_ext
         
         if extension not in self.SUPPORTED_EXTENSIONS:
             error_msg = f"지원하지 않는 파일 형식입니다: {extension}"
@@ -93,10 +100,10 @@ class DocumentLoader:
                 documents = []
             
             # 전처리 적용
-            documents = self._preprocess_documents(documents, file_path)
+            documents = self._preprocess_documents(documents, file_path, original_filename)
             
             self.stats['success_files'] += 1
-            logger.info(f"성공적으로 로드: {file_path} ({len(documents)} 페이지)")
+            logger.info(f"성공적으로 로드: {original_filename or file_path} ({len(documents)} 페이지)")
             
             return documents
             
@@ -276,7 +283,7 @@ class DocumentLoader:
             logger.error(f"Excel 로드 오류: {str(e)}")
             raise
     
-    def _preprocess_documents(self, documents: List[Document], file_path: str) -> List[Document]:
+    def _preprocess_documents(self, documents: List[Document], file_path: str, original_filename: str = None) -> List[Document]:
         """
         문서 전처리 적용
         - 공백 정규화
@@ -297,7 +304,7 @@ class DocumentLoader:
             # 메타데이터 보강
             doc.page_content = cleaned_text
             doc.metadata['file_path'] = file_path
-            doc.metadata['file_name'] = Path(file_path).name
+            doc.metadata['file_name'] = original_filename if original_filename else Path(file_path).name
             
             # 페이지 번호가 없으면 추가
             if 'page' not in doc.metadata:
