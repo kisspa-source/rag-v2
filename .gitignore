@@ -15,7 +15,8 @@ pip-delete-this-directory.txt
 # Project specific
 chroma_db/
 logs/
-data/
+data/*
+!data/samples/
 eval/results.json
 
 # IDE

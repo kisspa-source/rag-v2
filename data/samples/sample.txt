@@ -1,0 +1,25 @@
+
+2024-05-20 10:00:01 [INFO] RAG_System: Starting initialization sequence...
+2024-05-20 10:00:02 [INFO] Loader: Loaded configuration from config/config.yaml
+2024-05-20 10:00:03 [INFO] GPU_Check: NVIDIA CUDA detected (Count: 2, Model: A100-80GB)
+2024-05-20 10:00:03 [WARN] GPU_Check: Driver version 535.122 is slightly outdated. Recommend update to 550+.
+2024-05-20 10:00:05 [INFO] Model_Load: Loading 'llama3:70b-instruct-q4_k_m'...
+2024-05-20 10:00:15 [INFO] Model_Load: Successfully loaded to VRAM (Offload layers: 83/83)
+2024-05-20 10:00:16 [INFO] VectorDB: Connecting to ChromaDB (Persistent) at ./chroma_db
+2024-05-20 10:00:17 [INFO] Indexer: Found 12,450 documents in index.
+2024-05-20 10:00:17 [INFO] Server: API Server running on http://0.0.0.0:8000
+
+--- REQUEST LOG ---
+2024-05-20 10:05:23 [REQ] User_ID: user_123 | Query: "리눅스에서 로컬 RAG 성능 최적화 방법은?"
+2024-05-20 10:05:23 [SEARCH] Hybrid Search triggered (BM25 + Vector)
+2024-05-20 10:05:24 [RETRIEVAL] Found 50 candidates. Top source: 'linux_optimization_guide.pdf' (Score: 0.89)
+2024-05-20 10:05:24 [RERANK] BAAI/bge-reranker-v2-m3 re-ordered top 5 candidates.
+2024-05-20 10:05:24 [GEN] Context len: 2450 tokens. Generating answer...
+2024-05-20 10:05:28 [RES] Sent 450 tokens. (Speed: 112.5 t/s). Latency: 4.2s.
+
+--- SYSTEM METRICS ---
+CPU Usage: 12%
+RAM Usage: 24.5 GB / 128 GB
+VRAM Usage: 78.2 GB / 160 GB (Dual GPU)
+Temperature: GPU0 65C, GPU1 68C
+Power Draw: 550W (Peak)
