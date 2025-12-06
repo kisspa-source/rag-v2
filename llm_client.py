@@ -175,7 +175,7 @@ if __name__ == "__main__":
     import yaml
     
     # 설정 로드
-    with open('config.yaml', 'r', encoding='utf-8') as f:
+    with open('config/config.yaml', 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     
     # LLM 클라이언트 초기화

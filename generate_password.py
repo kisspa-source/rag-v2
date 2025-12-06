@@ -33,6 +33,6 @@ if __name__ == "__main__":
     print(f"\nPassword: {password}")
     print(f"Hash: {p_hash}")
     print(f"Salt: {p_salt}")
-    print("\nAdd these to your config.yaml under 'security':")
+    print("\nAdd these to your config/config.yaml under 'security':")
     print(f"  admin_password_hash: \"{p_hash}\"")
     print(f"  salt: \"{p_salt}\"")

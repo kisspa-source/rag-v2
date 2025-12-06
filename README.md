@@ -156,7 +156,7 @@
 
 ## ⚙️ 설정 (Configuration)
 
-`config.yaml` 파일을 수정하여 RAG 시스템의 동작을 제어할 수 있습니다.
+`config/config.yaml` 파일을 수정하여 RAG 시스템의 동작을 제어할 수 있습니다.
 
 ```yaml
 rag:
@@ -177,7 +177,7 @@ llm:
 
 *   **Ollama 연결 실패**: `ollama serve` 명령어로 백그라운드 서비스를 실행하거나, Ollama 앱이 켜져 있는지 확인하세요.
 *   **OCR 오류**: `tesseract` 또는 `poppler`가 제대로 설치되지 않았을 수 있습니다. OS별 설치 가이드를 다시 확인하세요.
-*   **메모리 부족**: `config.yaml`에서 `use_rerank: false`로 변경하고 `context_count`를 줄이세요.
+*   **메모리 부족**: `config/config.yaml`에서 `use_rerank: false`로 변경하고 `context_count`를 줄이세요.
 *   **속도 저하**: 처음 실행 시 임베딩 모델 및 Reranker 모델 다운로드로 인해 시간이 걸릴 수 있습니다. 이후에는 빨라집니다.
 
 ---

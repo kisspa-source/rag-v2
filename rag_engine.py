@@ -32,7 +32,7 @@ import threading
 class RAGEngine:
     """통합 RAG 엔진 - 문서 로드, 인덱싱, 검색, 답변 생성"""
     
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path: str = "config/config.yaml"):
         """
         RAG 엔진 초기화
         

@@ -36,7 +36,7 @@ def main():
     
     # Check Project Files
     files = [
-        "config.yaml",
+        "config/config.yaml",
         "app.py",
         "rag_engine.py",
         "loaders.py",

@@ -31,7 +31,7 @@ def check_password(password: str) -> bool:
     """비밀번호 검증"""
     try:
         import yaml
-        with open('config.yaml', 'r', encoding='utf-8') as f:
+        with open('config/config.yaml', 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
             
         stored_hash = config.get('security', {}).get('admin_password_hash')
@@ -112,45 +112,59 @@ def main():
         with st.sidebar:
             st.header("📄 문서 업로드")
             
-            # 파일 업로드
-            uploaded_file = st.file_uploader(
+            # 파일 업로드 (Multi-file Support)
+            uploaded_files = st.file_uploader(
                 "PDF, Markdown, Text 파일 업로드",
                 type=['pdf', 'md', 'txt'],
-                help="지원 형식: PDF, Markdown (.md), Text (.txt)"
+                help="지원 형식: PDF, Markdown (.md), Text (.txt)",
+                accept_multiple_files=True
             )
             
-            if uploaded_file is not None:
-                if st.button("📥 인덱싱 시작", type="primary"):
-                    with st.status("파일 처리 중...") as status:
-                        # 임시 파일로 저장
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(uploaded_file.name).suffix) as tmp_file:
-                            tmp_file.write(uploaded_file.getvalue())
-                            tmp_path = tmp_file.name
+            if uploaded_files:
+                if st.button("📥 선택한 파일 인덱싱 시작", type="primary"):
+                    with st.status("파일 처리 중...", expanded=True) as status:
+                        success_count = 0
+                        fail_count = 0
                         
-                        try:
-                            # 인덱싱
-                            st.write("📖 문서 로드 중...")
-                            result = engine.load_and_index_file(tmp_path, original_filename=uploaded_file.name)
+                        for i, uploaded_file in enumerate(uploaded_files):
+                            st.write(f"📄 처리 중 ({i+1}/{len(uploaded_files)}): {uploaded_file.name}")
                             
-                            if result['success']:
-                                status.update(label="✅ 인덱싱 완료!", state="complete")
-                                st.success(result['message'])
-                                st.info(f"소요 시간: {result['elapsed_time']:.2f}초")
+                            # 임시 파일로 저장
+                            with tempfile.NamedTemporaryFile(delete=False, suffix=Path(uploaded_file.name).suffix) as tmp_file:
+                                tmp_file.write(uploaded_file.getvalue())
+                                tmp_path = tmp_file.name
+                            
+                            try:
+                                # 인덱싱
+                                result = engine.load_and_index_file(tmp_path, original_filename=uploaded_file.name)
                                 
-                                # 파일 목록 갱신
-                                st.session_state.indexed_files = engine.get_indexed_files()
-                                
-                                # 샘플 질문 갱신
-                                if result.get('sample_questions'):
-                                    st.session_state.sample_questions = result['sample_questions']
-                            else:
-                                status.update(label="❌ 인덱싱 실패", state="error")
-                                st.error(result['message'])
+                                if result['success']:
+                                    st.write(f"✅ {uploaded_file.name}: 성공")
+                                    success_count += 1
+                                    
+                                    # 샘플 질문 갱신 (마지막 성공 파일 기준)
+                                    if result.get('sample_questions'):
+                                        st.session_state.sample_questions = result['sample_questions']
+                                else:
+                                    st.error(f"❌ {uploaded_file.name}: 실패 - {result['message']}")
+                                    fail_count += 1
+                            except Exception as e:
+                                st.error(f"❌ {uploaded_file.name}: 오류 - {str(e)}")
+                                fail_count += 1
+                            finally:
+                                # 임시 파일 삭제
+                                if os.path.exists(tmp_path):
+                                    os.unlink(tmp_path)
                         
-                        finally:
-                            # 임시 파일 삭제
-                            if os.path.exists(tmp_path):
-                                os.unlink(tmp_path)
+                        # 최종 결과 표시
+                        if fail_count == 0:
+                            status.update(label=f"✅ 모든 파일({success_count}개) 인덱싱 완료!", state="complete", expanded=False)
+                            st.info("파일 목록이 갱신되었습니다.")
+                        else:
+                            status.update(label=f"⚠️ 완료: 성공 {success_count}, 실패 {fail_count}", state="error", expanded=True)
+                        
+                        # 파일 목록 갱신
+                        st.session_state.indexed_files = engine.get_indexed_files()
             
             # Ollama 연결 상태
             st.divider()
@@ -249,7 +263,7 @@ def main():
         # 설정 파일 로드
         import yaml
         try:
-            with open('config.yaml', 'r', encoding='utf-8') as f:
+            with open('config/config.yaml', 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f)
         except Exception as e:
             st.error(f"설정 파일 로드 실패: {e}")
@@ -366,7 +380,7 @@ def main():
                     config['presets']['current'] = "Custom"
                 
                 # 파일 저장
-                with open('config.yaml', 'w', encoding='utf-8') as f:
+                with open('config/config.yaml', 'w', encoding='utf-8') as f:
                     yaml.dump(config, f, allow_unicode=True)
                 
                 st.success("설정이 저장되었습니다. 적용을 위해 앱을 다시 로드합니다.")
@@ -420,23 +434,44 @@ def main():
                         st.error(f"불러오기 실패: {e}")
 
         st.divider()
+        st.divider()
         st.subheader("📚 파일 관리")
         
+        col_file1, col_file2 = st.columns([3, 1])
+        with col_file2:
+            if st.button("🔄 목록 새로고침"):
+                st.session_state.indexed_files = engine.get_indexed_files()
+                st.rerun()
+        
         if st.session_state.indexed_files:
-            # 테이블 형태로 표시
-            file_data = [{"File Name": f} for f in st.session_state.indexed_files]
-            st.table(file_data)
+            # 파일을 데이터프레임으로 변환하여 표시
+            file_list = st.session_state.indexed_files
             
-            # 삭제 선택
-            file_to_delete = st.selectbox("삭제할 파일 선택", ["선택하세요..."] + st.session_state.indexed_files)
-            if file_to_delete != "선택하세요...":
-                if st.button(f"🗑️ {file_to_delete} 삭제", type="primary"):
-                    if engine.delete_file(file_to_delete):
-                        st.success(f"삭제됨: {file_to_delete}")
-                        st.session_state.indexed_files = engine.get_indexed_files()
-                        st.rerun()
-                    else:
-                        st.error("삭제 실패")
+            # 각 파일별 삭제 버튼 생성
+            st.markdown("##### 인덱싱된 파일 목록")
+            for file_name in file_list:
+                col_name, col_del = st.columns([4, 1])
+                with col_name:
+                    st.text(f"📄 {file_name}")
+                with col_del:
+                    if st.button("삭제", key=f"del_{file_name}", type="secondary", help=f"{file_name}을(를) 삭제합니다"):
+                        if engine.delete_file(file_name):
+                            st.success(f"삭제됨: {file_name}")
+                            st.session_state.indexed_files = engine.get_indexed_files()
+                            time.sleep(0.5)
+                            st.rerun()
+                        else:
+                            st.error("삭제 실패")
+            
+            if st.button("🗑️ 전체 파일 삭제", type="primary"):
+                if st.checkbox("정말 모든 파일을 삭제하시겠습니까?"):
+                    progress_text = st.empty()
+                    for f in file_list:
+                        progress_text.text(f"삭제 중: {f}...")
+                        engine.delete_file(f)
+                    st.success("모든 파일이 삭제되었습니다.")
+                    st.session_state.indexed_files = []
+                    st.rerun()
         else:
             st.info("인덱싱된 파일이 없습니다.")
 

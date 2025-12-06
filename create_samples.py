@@ -3,7 +3,7 @@ from pptx import Presentation
 from openpyxl import Workbook
 import os
 
-def create_sample_docx(filename="sample.docx"):
+def create_sample_docx(filename="data/samples/sample.docx"):
     doc = docx.Document()
     doc.add_heading('Test Document', 0)
     doc.add_paragraph('This is a test paragraph for Word loader.')
@@ -11,7 +11,7 @@ def create_sample_docx(filename="sample.docx"):
     doc.save(filename)
     print(f"Created {filename}")
 
-def create_sample_pptx(filename="sample.pptx"):
+def create_sample_pptx(filename="data/samples/sample.pptx"):
     prs = Presentation()
     slide_layout = prs.slide_layouts[0]
     slide = prs.slides.add_slide(slide_layout)
@@ -22,7 +22,7 @@ def create_sample_pptx(filename="sample.pptx"):
     prs.save(filename)
     print(f"Created {filename}")
 
-def create_sample_xlsx(filename="sample.xlsx"):
+def create_sample_xlsx(filename="data/samples/sample.xlsx"):
     wb = Workbook()
     ws = wb.active
     ws.title = "TestSheet"
