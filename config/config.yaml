@@ -63,7 +63,7 @@ rag:
   context_count: 3
   reranker_model: BAAI/bge-reranker-v2-m3
   search_type: hybrid_rrf
-  top_k: 5
+  top_k: 3
   use_rerank: true
 security:
   admin_password_hash: bd066069d4a5a32b46294b634ebb6af447e5d889bfe3ed2b04dd70d368de4faf
